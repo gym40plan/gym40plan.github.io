@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="generator" content="">
+  <title>План гимназии</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    .bd-placeholder-img {
+      font-size: 1.125rem;
+      text-anchor: middle;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+    }
+
+    @media (min-width: 768px) {
+      .bd-placeholder-img-lg {
+        font-size: 3.5rem;
+      }
+    }
+  </style>
+
+
+  <!-- Custom styles for this template -->
+  <link href="css/starter-template.css" rel="stylesheet">
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">План</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExampleDefault"
+        aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+          <li class="nav-item active">
+            <a class="nav-link" aria-current="page" href="#">План</a>
+          </li>
+          <!--
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="dropdown01" data-bs-toggle="dropdown" aria-expanded="false">Dropdown</a>
+          <ul class="dropdown-menu" aria-labelledby="dropdown01">
+            <li><a class="dropdown-item" href="#">Action</a></li>
+            <li><a class="dropdown-item" href="#">Another action</a></li>
+            <li><a class="dropdown-item" href="#">Something else here</a></li>
+          </ul>
+        </li>
+        -->
+        </ul>
+        <form class="d-flex" onsubmit="return false;">
+          <input id="cabNumberForSearch" class="form-control me-2" type="search" placeholder="Кабинет"
+            aria-label="Search">
+          <button onclick="searchCab()" class="btn btn-outline-success">Найти</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <div class="starter-template text-center py-5 px-3">
+      <h1>План 40 гимназии</h1>
+      <p class="lead">План...</p>
+    </div>
+
+    <div id="floorplan-ui"></div>
+    <button onclick="pr();" class="btn btn-outline-success">Click</button>
+    <button id="floorBtn1" onclick="selectFloor(1);" class="btn btn-outline-success">1 этаж</button>
+    <button id="floorBtn2" onclick="selectFloor(2);" class="btn btn-outline-success">2 этаж</button>
+    <button id="floorBtn3" onclick="selectFloor(3);" class="btn btn-outline-success">3 этаж</button>
+    <div id="floorplans">
+      <object id="floorplan1" data="plan1.svg" type="image/svg+xml" width="100%" class="floorplan"></object>
+      <object id="floorplan2" data="plan2.svg" type="image/svg+xml" width="100%" class="floorplan"></object>
+      <object id="floorplan3" data="plan3.svg" type="image/svg+xml" width="100%" class="floorplan"></object>
+    </div>
+
+    <div id="dataviz"></div>
+
+  </main><!-- /.container -->
+
+  <script src="js/bootstrap.bundle.min.js"></script>
+  <!-- <script src="js/svg-inject.min.js"></script>   onload="SVGInject(this)" -->
+  <script src="js/svg-pan-zoom.min.js"></script>
+
+  <script type="text/javascript">
+    const DEBUG = true;
+    const mapclass = 'floorplan';
+    const pathClass = 'path1';
+    const floorCount = 3;
+    const pathColor = '#ffc107';
+    const pathWidth = 15;
+
+    var currentFloor = 1;
+    var mapList = {};
+    var mapGraph = null;
+
+    var log = function (x) {
+      if (DEBUG) {
+        console.log(x);
+      }
+    };
+
+    var setZoom = function () {
+      /* svgPanZoom('#floorplan', {
+                zoomEnabled: true,
+                controlIconsEnabled: true,
+                minZoom: 0.1,
+                maxZoom: 10
+              }); */
+
+      // Expose variable to use for testing
+      window.zoomPlan = svgPanZoom('#floorplan1', {
+        zoomEnabled: true,
+        controlIconsEnabled: true,
+        minZoom: 0.1,
+        maxZoom: 10
+      });
+
+      // Expose variable to use for testing
+      window.zoomPlan2 = svgPanZoom('#floorplan2', {
+        zoomEnabled: true,
+        controlIconsEnabled: true,
+      });
+      window.zoomPlan3 = svgPanZoom('#floorplan3', {
+        zoomEnabled: true,
+        controlIconsEnabled: true,
+      });
+
+      zoomPlan.setOnZoom(function (level) {
+        zoomPlan2.zoom(level);
+        zoomPlan2.pan(zoomPlan.getPan());
+        zoomPlan3.zoom(level);
+        zoomPlan3.pan(zoomPlan.getPan());
+      });
+
+      zoomPlan.setOnPan(function (point) {
+        zoomPlan2.pan(point);
+        zoomPlan3.pan(point);
+      });
+
+      zoomPlan2.setOnZoom(function (level) {
+        zoomPlan.zoom(level)
+        zoomPlan.pan(zoomPlan2.getPan())
+        zoomPlan3.zoom(level)
+        zoomPlan3.pan(zoomPlan2.getPan())
+      });
+
+      zoomPlan2.setOnPan(function (point) {
+        zoomPlan.pan(point)
+        zoomPlan3.pan(point)
+      });
+
+      zoomPlan3.setOnZoom(function (level) {
+        zoomPlan.zoom(level)
+        zoomPlan.pan(zoomPlan3.getPan())
+        zoomPlan2.zoom(level)
+        zoomPlan2.pan(zoomPlan3.getPan())
+      });
+
+      zoomPlan3.setOnPan(function (point) {
+        zoomPlan.pan(point)
+        zoomPlan2.pan(point)
+      });
+    };
+
+    var selectFloor = function (floorNumber) {
+      for (var i = 1; i <= floorCount; i++) {
+        let elemId = mapclass + i;
+        log(elemId);
+        let mapObj = document.getElementById(elemId);
+        var elemBtnId = "floorBtn" + i;
+        let btnObj = document.getElementById(elemBtnId);
+        log(mapObj);
+        if (i != 1) {
+          mapObj.style.left = document.getElementById(mapclass + 1).style.left;
+          mapObj.style.top = document.getElementById(mapclass + 1).style.top;
+        }
+        if (i == floorNumber) {
+          mapObj.style.visibility = 'visible';
+          mapObj.style.position = "absolute";
+          
+          btnObj.style.background = "#a0efca";
+        }
+        else {
+          mapObj.style.visibility = 'hidden';
+          mapObj.style.top = -1;
+
+          btnObj.style.background = ""
+        }
+      }
+
+      currentFloor = floorNumber;
+    };
+
+    var pr = function () {
+      /*
+      var x = document.getElementById('cab101');
+      console.log(x);
+      x.setAttribute('fill','green');
+      */
+
+      var maps = document.getElementsByClassName(mapclass);
+      log(maps);
+
+      maps[0].contentDocument.getElementById('cab101').style.fill = '#0BA6F0';
+
+      var tmp = '1,2,3';
+      log(tmp);
+
+      var tmp_lst = JSON.parse('[' + tmp + ']');
+      log(tmp_lst);
+
+      // remove path1
+      clearPath(mapList);
+    };
+
+    var clearCabSelection = function () {
+      var maps = document.getElementsByClassName(mapclass);
+      var cabs = maps[0].contentDocument.getElementsByClassName('cab');
+      for (let cab of cabs) {
+        cab.style.fill = 'yellow';
+      }
+    };
+
+    var selectCabByNumber = function (cabNumber) {
+      var maps = document.getElementsByClassName(mapclass);
+      var cabId = 'cab' + cabNumber;
+      log(cabId);
+      var cabElem = maps[0].contentDocument.getElementById(cabId);
+      if (cabElem !== null) {
+        clearCabSelection();
+        cabElem.style.fill = 'red';
+      }
+    };
+
+    var searchCab = function () {
+      var cabNumber = document.getElementById('cabNumberForSearch').value;
+      log(cabNumber);
+      if (cabNumber !== null) {
+        selectCabByNumber(cabNumber);
+      }
+    };
+
+    var drawPath = function (svgdoc, point1, point2) {
+      //log(svgdoc);
+      //log(point1);
+      //log(point2);
+      if (svgdoc == null || point1 == null || point2 == null) {
+        log("param is null!");
+        return;
+      }
+
+      x1 = point1.getAttribute('sodipodi:cx');
+      y1 = point1.getAttribute('sodipodi:cy');
+      x2 = point2.getAttribute('sodipodi:cx');
+      y2 = point2.getAttribute('sodipodi:cy');
+
+      var doc = svgdoc; //.ownerDocument;
+      var newElement = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+      //newElement.setAttribute('id', pathClass);
+      newElement.setAttribute('class', pathClass);
+      newElement.setAttribute('d', 'M' + x1 + ',' + y1 + 'L' + x2 + ',' + y2);
+      newElement.style.stroke = pathColor;
+      newElement.style.strokeWidth = pathWidth; //'15px';
+      doc.documentElement.getElementById('layer1').appendChild(newElement); //doc.appendChild(newElement);
+
+      //drawCircle(svgdoc, point1, 7);
+      //drawCircle(svgdoc, point2, 7);
+    };
+
+    var drawCircle = function(svgdoc, point1, radius){
+      if (svgdoc == null || point1 == null) {
+        log("param is null!");
+        return;
+      }
+
+      x1 = point1.getAttribute('sodipodi:cx');
+      y1 = point1.getAttribute('sodipodi:cy');
+
+      var circle = svgdoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('class', pathClass);
+      circle.setAttributeNS(null, 'cx', x1);
+      circle.setAttributeNS(null, 'cy', y1);
+      circle.setAttributeNS(null, 'r', radius);
+      circle.style.stroke = pathColor;
+      circle.style.fill = pathColor;
+      svgdoc.documentElement.getElementById('layer1').appendChild(circle);
+    };
+
+    var drawPathByIds = function(maps, mapId, pointId1, pointId2){
+      //mapList[mapId].points[0]
+      var point1 = maps[mapId].svg.getElementById(pointId1);
+      var point2 = maps[mapId].svg.getElementById(pointId2);
+      drawPath(maps[mapId].svg, point1, point2);
+    };
+
+    var drawPathFull = function (maps, path) {
+      log("drawPathFull"); log(maps); log(path);
+
+      if (path == null) {
+        log("Null path!");
+        return;
+      }
+      if (path.path == null) {
+        log("No path.path!");
+        return;
+      }
+      if (path.path.length == 0) {
+        log("Zero path.path!");
+        return;
+      }
+      let prevElId = null;
+      for (let elId of path.path) {
+        log(elId);
+        let mapId = getMapIdByElementId(maps, elId);
+        log(mapId);
+
+        log("draw: " + mapId + " " + prevElId + " " + elId);
+        drawPathByIds(maps, mapId, prevElId, elId);
+        drawCircle(maps[mapId].svg, maps[mapId].svg.getElementById(elId), Math.floor(pathWidth/2));
+        prevElId = elId;
+      }
+    };
+
+    var clearPath = function (maps) {
+      // remove path1
+      //log("clearPath"); log(maps);
+      for (let mapId in maps) {
+        //log(mapId);
+        var paths1 = maps[mapId].svg.getElementsByClassName(pathClass);
+        //log(paths1);
+        if (paths1 !== null) {
+          while(paths1.length > 0) {
+            //log(paths1);
+            paths1[0].remove();
+          }
+        }
+      }
+      //var path1 = maps[0].contentDocument.getElementById(pathClass);
+      //if(path1 !== null) {
+      //  path1.remove();
+      //}
+    };
+
+    var getMapIdByElementId = function(maps, elemId) {
+        //log("getMapIdByElementId"); log(maps); log(elemId);
+        var res = null;
+        if(maps == null || elemId == null) {
+          return res;
+        }
+        for (let mapId in maps) {
+          var elem = maps[mapId].svg.getElementById(elemId);
+          if(elem !== null){
+            return mapId;
+          }
+        }
+        return res;
+    };
+
+    window.onload = function () {
+      log('Start...');
+
+      //Load all maps
+      var maps = document.getElementsByClassName(mapclass);
+      log(maps);
+
+      log(maps[0].contentDocument);
+
+      setZoom();
+      selectFloor(1);
+
+      //Looping on each map
+      for (let map of maps) {
+
+        mapList[map.id] = {};
+
+        //Access inner Svg Dom
+        mapList[map.id].svg = map.contentDocument;
+        //Parse useful contents
+        mapList[map.id].cabs = map.contentDocument.getElementsByClassName('cab');
+
+        mapList[map.id].points = map.contentDocument.getElementsByClassName('point');
+
+        //mapList[map.id].floors = map.contentDocument.getElementsByClassName("floor");
+
+      }
+      log("mapList=");
+      log(mapList);
+
+      for (var i = 1; i <= floorCount; i++) {
+        var mapId = mapclass + i;
+
+        //Mouse hover behaviour
+        for (let cab of mapList[mapId].cabs) {
+          //Create text when mouse over
+          cab.addEventListener('mouseover', function () {
+            cab.style.fill = 'green';
+          });
+
+          //Remove text when leaving
+          cab.addEventListener('mouseleave', function () {
+
+            cab.style.fill = 'yellow';
+
+          });
+
+        }; //For cab
+
+        // hide path points
+        for (let point of mapList[mapId].points) {
+          //var x = point.getAttribute('sodipodi:cx'); console.log(x);
+          point.setAttribute('visibility', 'hidden');
+        } // for points
+      } //for(var i=1; i <= floorCount; i++) {
+
+      var mapId = mapclass + 1;
+
+      // test draw
+      //drawPath(mapList[mapId].svg, mapList[mapId].points[0], mapList[mapId].points[1]);
+
+      // get param
+      var startLocation = location.search.split('start=')[1]
+      log(startLocation);
+      if (startLocation !== undefined) {
+        selectCabByNumber(startLocation);
+      }
+
+      // create graph from maps
+      var graph = makeGraphForMaps(mapList);
+      log(graph);
+      mapGraph = convertGraph2Bidirect(graph);
+      log(mapGraph);
+      //var res = dijkstra(mapGraph, "303", "102");
+      var res = dijkstra(mapGraph, "101", "302");
+      log(res);
+
+      //log(getMapIdByElementId(mapList, "203"));
+
+      drawPathFull(mapList, res);
+    };
+
+    var getPointById = function (maps, pointId) {
+      //log("getPointById"); log(pointId);
+      var point = null;
+      if (pointId !== null) {
+        for (let mapId in maps) {
+          //log(mapId);
+          point = maps[mapId].svg.getElementById(pointId);
+          //log(point);
+          if (point !== null) {
+            return point;
+          }
+        }
+      }
+      return point;
+    };
+
+    var getPointsDistance = function (point1, point2) {
+      //log("getPointsDistance"); log(point1); log(point2);
+      var res = 0;
+
+      if (point1 !== null && point2 !== null) {
+        x1 = point1.getAttribute('sodipodi:cx');
+        y1 = point1.getAttribute('sodipodi:cy');
+        x2 = point2.getAttribute('sodipodi:cx');
+        y2 = point2.getAttribute('sodipodi:cy');
+
+        res = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2))
+      }
+
+      return res;
+    };
+
+    var makeGraphForMaps = function (maps) {
+      log("makeGraphForMaps");
+      log(maps);
+      var graph = {};
+      for (let mapId in maps) {
+        //log(mapId);
+        let pointsList = maps[mapId].points;
+        //log(pointsList);
+        for (let point of pointsList) {
+          log(point);
+          let id = point.getAttribute('id');
+          let data = point.getAttribute('data');
+          let childrensList = JSON.parse('[' + data + ']');
+          log(childrensList);
+          if (graph[id] == null) {
+            graph[id] = {};
+          }
+
+          for (let childId of childrensList) {
+            log(childId);
+            let point2 = getPointById(maps, childId);
+            let distance = getPointsDistance(point, point2);
+            graph[id][childId] = distance;
+          }
+        }
+      };
+
+      return graph;
+    };
+
+    /*
+    const graph = {
+        S: {A: 5, B: 2},
+            A: {C: 4, D: 2},
+            B: {A: 8, D: 7},
+            C: {D: 6, F: 3},
+            D: {F: 1},
+       F: {}
+      };
+    
+      log(graph);
+    
+      const problem = {
+        S: {A: 5, B: 2},
+        A: {S: 5, C: 4, D: 2, B:8},
+        B: {A: 8, D: 7, S:2},
+        C: {D: 6, F: 3},
+        D: {F: 1, B:7, A:2, C:6},
+        F: {D:1, C:3}
+      };
+    
+    */
+
+    var convertGraph2Bidirect = function (graph) {
+      var res = {};
+
+      //convert uni-directional to bi-directional graph
+      for (let id in graph) {
+        //log(id)
+        if (!res[id])
+          res[id] = {};
+        //log(graph[id]);
+        for (let id2 in graph[id]) {
+          //log(id2); log(graph[id][id2]);
+          if (res[id2] == null) {
+            res[id2] = {};
+          }
+          res[id][id2] = graph[id][id2];
+          res[id2][id] = graph[id][id2];
+          //log(res[id]);
+        }
+      }
+      return res;
+    };
+
+    // Dijkstra’s Algorithm
+    // https://hackernoon.com/how-to-implement-dijkstras-algorithm-in-javascript-abdfd1702d04
+    //   https://gist.github.com/stella-yc/49a7b96679ab3bf06e26421fc81b5636
+    //     https://gist.github.com/MoeweX/ab98efee9435b47529e3a6cb50c5b605
+
+    //var problem = convertGraph2Bidirect(graph);
+    //log("res=")
+    //log(problem); 
+
+    const lowestCostNode = (costs, processed) => {
+      return Object.keys(costs).reduce((lowest, node) => {
+        if (lowest === null || costs[node] < costs[lowest]) {
+          if (!processed.includes(node)) {
+            lowest = node;
+          }
+        }
+        return lowest;
+      }, null);
+    };
+
+    // function that returns the minimum cost and path to reach Finish
+    const dijkstra = (graph, startNodeName, endNodeName) => {
+
+      // track the lowest cost to reach each node
+      let costs = {};
+      costs[endNodeName] = Infinity;
+      costs = Object.assign(costs, graph[startNodeName]);
+      //log(costs)
+
+      // track paths
+      //const parents = {endNodeName: null};
+      const parents = {};
+      parents[endNodeName] = null;
+      //log(parents);
+
+      for (let child in graph[startNodeName]) {
+        parents[child] = startNodeName;
+      }
+
+      // track nodes that have already been processed
+      const processed = [];
+
+      let node = lowestCostNode(costs, processed);
+
+      while (node) {
+        let cost = costs[node];
+        let children = graph[node];
+        for (let n in children) {
+          if (String(n) === String(startNodeName)) {
+            log("don't go back");
+          } else {
+            //log("StartNodeName: " + startNodeName);
+            //log("Evaluating cost to node " + n + " (looking from node " + node + ")");
+            //log("Last Cost: " + costs[n]);
+            let newCost = cost + children[n];
+            //log("New Cost: " + newCost);
+            if (!costs[n] || costs[n] > newCost) {
+              costs[n] = newCost;
+              parents[n] = node;
+              //log("Updated cost und parents");
+            } else {
+              //log("A shorter path already exists");
+            }
+          }
+        }
+        processed.push(node);
+        node = lowestCostNode(costs, processed);
+      }
+
+      let optimalPath = [endNodeName];
+      let parent = parents[endNodeName];
+      while (parent) {
+        optimalPath.push(parent);
+        parent = parents[parent];
+      }
+      optimalPath.reverse();
+
+      const results = {
+        distance: costs[endNodeName],
+        path: optimalPath
+      };
+
+      return results;
+    };
+
+    /*
+    console.log(dijkstra(problem, "S", "F"));
+    console.log(dijkstra(problem, "A", "B"));
+    console.log(dijkstra(problem, "A", "S"));
+    console.log(dijkstra(problem, "F", "B"));
+  
+    var res = dijkstra(graph, 'S', 'F');
+    log(res);
+  
+    console.log(dijkstra(problem, "F", "S"));
+    */
+
+  </script>
+
+
+</body>
+
+</html>
